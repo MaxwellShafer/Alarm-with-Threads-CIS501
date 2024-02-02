@@ -17,6 +17,18 @@ namespace Alarm501
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Alarm501());
+            /*
+            while (true)
+            {
+                foreach (DateTime dateTime2 in alarm501.ActiveAlarmList)
+                {
+                    if (DateTime.Now.Hour == dateTime2.Hour && DateTime.Now.Minute == dateTime2.Minute)
+                    {
+                        alarm501.AlarmPopped(dateTime2.ToShortTimeString());
+                    }
+                }
+                
+            } */
         }
     }
 }
