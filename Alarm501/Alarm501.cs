@@ -28,7 +28,7 @@ namespace Alarm501
         public List<string> AlarmList { get; set; } = new List<string>();
 
         public List<AddEditAlarm> FormList { get; set; } = new List<AddEditAlarm>();
-        public List<DateTime> ActiveAlarmList { get; set; } = new List<DateTime>();
+        public List<Timer> ActiveAlarmList { get; set; } = new List<Timer>();
 
         private void UxAddBtn_Click(object sender, EventArgs e)
         {
@@ -101,7 +101,10 @@ namespace Alarm501
 
             List<string> formattedAlarms = new List<string>();
 
-
+            foreach(Timer t in ActiveAlarmList)
+            {
+                t.Stop();               
+            }
             // clear to put in the new active times
             ActiveAlarmList.Clear();
             // format each alarm and add to list, create alarms for each one that is marked on
@@ -111,12 +114,18 @@ namespace Alarm501
                 {
                     
                     DateTime alarmTime = DateTime.Parse(AlarmList[i]);
-                    ActiveAlarmList.Add(alarmTime);
+                    Timer timer = new Timer();
+                    timer.Interval = 10*(int)CalculateTimeDiffrence(alarmTime);
+                    Console.WriteLine("calculateDiff: " + timer.Interval );
+                    ActiveAlarmList.Add(timer);
+                    timer.Tick += AlarmNotification;
+                    timer.Start();
                     formattedAlarms.Add(AlarmList[i] + " On");
 
                 }
                 else
                 {
+                    ActiveAlarmList.Add(new Timer());
                     formattedAlarms.Add(AlarmList[i] + " Off");
                 }
             }
@@ -130,27 +139,33 @@ namespace Alarm501
         /// </summary>
         /// <param name="alarmTime"></param>
         /// <returns></returns>
-        private long CalculateTimeDiffrence(DateTime alarmTime)
+        private double CalculateTimeDiffrence(DateTime alarmTime)
         {
-            long hourInMins = ((alarmTime.Hour - DateTime.Now.Hour) * 60);
-            long mins = ((alarmTime.Minute-DateTime.Now.Minute));
-
-            if(hourInMins <= 0)
-            {
-                hourInMins += 1440;               
+            double time = alarmTime.Subtract(DateTime.Now).Milliseconds;
+            Console.WriteLine("PRE DAY: milliseconds: " + time + " seconds: " + time/1000 + " mins: " + time/6000);
+            while(time < 0)
+            {   // add one day
+                time = 86400000 + time;
             }
-            return (hourInMins + mins) * 6000;
-            
-            
+            Console.WriteLine("POST DAY: milliseconds: " + time + " seconds: " + time / 1000 + " mins: " + time / 6000);
+
+            return time;
+
         }
         /// <summary>
         /// updates the ui when the alarm goes off
         /// </summary>
         /// <param name="source"></param>
         /// <param name="e"></param>
-        private void AlarmNotification(Object source, Timers.ElapsedEventArgs e)
+        private void AlarmNotification(Object source, EventArgs e)
         {
             label2.Enabled = true;
+            this.Invalidate();
+            this.Update();
+            if(source is Timer t)
+            {
+                t.Stop();
+            }
         }
 
         /// <summary>
@@ -242,13 +257,18 @@ namespace Alarm501
             if (sender is Button b)
             {
                 b.Enabled = false;
+                if (label2.Enabled)
+                {
+                    label2.Enabled = false;
+                    Timer snoozeTimer = new Timer();
+                    snoozeTimer.Interval = 3000;
+                    snoozeTimer.Tick += AlarmNotification;
+                    snoozeTimer.Start();
+                    
+                }
+               
             }
-            if (label2.Enabled) { 
-                label2.Enabled = false;
-                Timers.Timer snoozeTimer = new Timers.Timer(3000);
-                snoozeTimer.Elapsed += AlarmNotification;
-                snoozeTimer.Start();
-            }   
+           
         }
 
         public void AlarmPopped(string alarmTime)
